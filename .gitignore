@@ -1,0 +1,20 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+
+# Research inputs and generated reports stay local.
+*.ipa
+*.apk
+*.aab
+*.apks
+*.dmg
+*.pkg
+*.exe
+*.msi
+*.msix
+*.appx
+*.html
+inventory.json
+state.json
+content.json
+merged-state.json
