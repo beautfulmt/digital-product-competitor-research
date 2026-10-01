@@ -4,6 +4,14 @@
 
 ## 安装
 
+从 Gitee 安装：
+
+```bash
+git clone https://gitee.com/beautifulmt/digital-product-competitor-research.git ~/.codex/skills/digital-product-competitor-research
+```
+
+也可从 GitHub 安装：
+
 ```bash
 git clone https://github.com/beautfulmt/digital-product-competitor-research.git ~/.codex/skills/digital-product-competitor-research
 ```
