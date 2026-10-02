@@ -2,6 +2,10 @@
 
 默认使用 `scripts/report.py render content.json state.json output.html`。只为当前研究有内容的模块写 `sections`，脚本不会产生空模块。页面采用米白纸张、深色文字、单一强调色、宽留白和明确的字号层级；适配桌面和手机，支持目录跳转与打印。若用户有视觉参考，可调整模板 CSS。
 
+全景和横向报告应有详细功能正文，按 [功能模块详细拆解](feature-breakdown.md) 展开。可以让每个产品或重要模块各占一个 `section`，在其 `blocks` 中组合子功能表、主要流程、规则状态说明和产品判断。摘要只提炼重点，功能正文保留具体用法。
+
+子功能表可采用“子功能、用户怎么用、产出结果、关键规则”四列；复杂流程再用 `flow` 展开，避免把全部细节挤进一张超宽表。共享规则集中写，模块差异单独展开。
+
 `content.json` 示例：
 
 ```json
@@ -37,7 +41,7 @@
 
 `visuals` 仅接收完整的 PNG、JPEG、WebP data URL。只有图片帮助区分产品或解释用户路径时才使用；报告要保持留白，不堆素材。
 
-`state.json` 是工作数据，不直接展示。由 `report.py init-state inventory.json state.json` 初始化后，补全 `features`，每项至少有稳定 `id`、`name`、`status`。建议的状态值：`observed`、`implemented`、`candidate`。可增加 `journey`、`interpretation`。默认只有确认的用户能力进入主结论。
+`state.json` 是工作数据，不直接展示。由 `report.py init-state inventory.json state.json` 初始化后，补全 `modules` 与 `features`。模块记录稳定的 `id`、`name`；子功能记录稳定的 `id`、`name`、`status` 和所属 `module_id`。建议的状态值：`observed`、`implemented`、`candidate`。流程、规则、状态和权益等按 [快照记录](feature-breakdown.md#快照记录) 保存。旧报告缺少模块地图时，先按已有功能与文件比较，并建立新版模块基线。
 
 横向报告中，每个产品保持独立的 `state.json`，用 `report.py merge-states merged.json product-a.json product-b.json` 合并后交给 `render`。功能 `id` 应按稳定的用户能力命名，不随资源文件名变化。`diff` 接受包含多个产品的旧 HTML，并从中匹配新版产品的 `id` 与平台。
 

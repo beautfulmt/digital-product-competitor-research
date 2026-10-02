@@ -39,7 +39,16 @@ def compact_state(state: dict) -> dict:
         }
     keep = ("schema_version", "generated_at", "product", "artifact", "coverage", "manifest")
     result = {key: state[key] for key in keep if key in state}
-    feature_fields = ("id", "name", "status", "journey", "interpretation")
+    module_fields = ("id", "name", "parent_id", "purpose", "related_ids")
+    result["modules"] = [
+        {key: module[key] for key in module_fields if key in module}
+        for module in state.get("modules", []) if isinstance(module, dict)
+    ]
+    feature_fields = (
+        "id", "name", "status", "module_id", "parent_id", "purpose", "scenario",
+        "entry", "conditions", "journey", "states", "inputs", "outputs", "rules",
+        "access", "related_ids", "interpretation",
+    )
     result["features"] = [
         {key: feature[key] for key in feature_fields if key in feature}
         for feature in state.get("features", []) if isinstance(feature, dict)
@@ -86,6 +95,7 @@ def init_state(inventory: dict) -> dict:
         "artifact": inventory.get("artifact", {}),
         "coverage": inventory.get("coverage", {}),
         "manifest": inventory.get("manifest", []),
+        "modules": [],
         "features": [],
     }
 
@@ -240,6 +250,22 @@ def read_state(path: Path) -> dict:
     return extract_snapshot(path) if path.suffix.lower() in {".html", ".htm"} else load_json(path)
 
 
+def record_candidates(old_records: list, new_records: list) -> dict:
+    old = {item["id"]: item for item in old_records if isinstance(item, dict) and item.get("id")}
+    new = {item["id"]: item for item in new_records if isinstance(item, dict) and item.get("id")}
+    common = old.keys() & new.keys()
+    return {
+        "added_ids": sorted(new.keys() - old.keys()),
+        "removed_ids": sorted(old.keys() - new.keys()),
+        "changed_ids": sorted(
+            key for key in common
+            if any(old[key][field] != new[key][field] for field in (old[key].keys() & new[key].keys()) - {"id"})
+        ),
+        "detail_added_ids": sorted(key for key in common if new[key].keys() - old[key].keys()),
+        "detail_missing_ids": sorted(key for key in common if old[key].keys() - new[key].keys()),
+    }
+
+
 def compare(old: dict, new: dict) -> dict:
     old_product, new_product = old.get("product", {}), new.get("product", {})
     old_id, new_id = old_product.get("id"), new_product.get("id")
@@ -272,8 +298,10 @@ def compare(old: dict, new: dict) -> dict:
         component_changes[str(old_files[path].get("component", "unknown"))]["removed"] += 1
     for path in changed:
         component_changes[str(new_files[path].get("component", "unknown"))]["changed"] += 1
-    old_features = {item["id"]: item for item in old.get("features", []) if isinstance(item, dict) and item.get("id")}
-    new_features = {item["id"]: item for item in new.get("features", []) if isinstance(item, dict) and item.get("id")}
+    old_modules, new_modules = old.get("modules", []), new.get("modules", [])
+    module_candidates = {"status": "module-map-unavailable"}
+    if old_modules and new_modules:
+        module_candidates = {"status": "compared", **record_candidates(old_modules, new_modules)}
     return {
         "identity": identity,
         "old": {"name": old_product.get("name"), "version": old_product.get("version"), "platform": old_platform, "artifact_sha256": old.get("artifact", {}).get("sha256")},
@@ -284,8 +312,9 @@ def compare(old: dict, new: dict) -> dict:
         "changed_paths": changed,
         "possible_renames": renames,
         "component_changes": [{"component": component, **counts} for component, counts in sorted(component_changes.items(), key=lambda pair: (-sum(pair[1].values()), pair[0]))],
-        "feature_candidates": {"added_ids": sorted(new_features.keys() - old_features.keys()), "removed_ids": sorted(old_features.keys() - new_features.keys()), "changed_ids": sorted(key for key in old_features.keys() & new_features.keys() if old_features[key] != new_features[key])},
-        "interpretation_notice": "File and feature differences are investigation leads, not confirmed user-facing changes.",
+        "module_candidates": module_candidates,
+        "feature_candidates": record_candidates(old.get("features", []), new.get("features", [])),
+        "interpretation_notice": "File, module and feature differences are investigation leads, not confirmed user-facing changes. Newly recorded or missing detail fields indicate analysis coverage changes and need review.",
     }
 
 
